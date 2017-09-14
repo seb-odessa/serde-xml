@@ -1,0 +1,9 @@
+[package]
+name = "serde-xml"
+version = "0.1.0"
+authors = ["seb-odessa <seb@ukr.net>"]
+
+[dependencies]
+    serde = "*"
+    serde_derive = "*"
+    serde-xml-rs = "*"
