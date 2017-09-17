@@ -2,7 +2,9 @@
 extern crate serde_xml_rs;
 use std::io::{self, Read};
 use serde_xml_rs::deserialize;
+use std::error::Error;
 
+type SerdeError = serde_xml_rs::Error;
 
 #[derive(Debug, Deserialize)]
 pub struct Sequence {
@@ -70,8 +72,11 @@ fn main() {
     let mut xml = String::new();
     match reader.read_to_string(&mut xml) {
         Ok(_) => {
-            let obj: FictionBook = deserialize(xml.as_bytes()).unwrap();
-            println!("{:#?}", obj);
+            let fb: Result<FictionBook, SerdeError> = deserialize(xml.as_bytes());
+            match fb {
+                Ok(fb) => println!("{:#?}", fb),
+                Err(e) => println!("{}", e.description()),
+            }
         },
         Err(_) => {}
     }
