@@ -2,11 +2,12 @@
 
 extern crate serde_derive;
 extern crate serde_xml_rs;
-use std::io::{self, Read};
+use std::io::Read;
 
 mod serde {
     pub use serde_xml_rs::deserialize;
     pub use serde_xml_rs::Error;
+    pub use serde_xml_rs::Error::Custom;
 
     //  Элемент <sequence>
     // Атрибуты
@@ -155,13 +156,6 @@ mod serde {
     }
 }
 
-
-pub fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
-    haystack.windows(needle.len()).position(
-        |window| window == needle,
-    )
-}
-
 fn escape(xml: &String) -> String {
     if xml.find("&amp;").is_none() {
         if xml.find("&").is_some() {
@@ -209,31 +203,55 @@ use serde::FictionBook;
 use serde::Error;
 use serde::deserialize;
 
-fn parse(xml: &String) -> Result<FictionBook, Error> {
-    let mut fb = deserialize(xml.as_bytes());
-    if fb.is_err() {
-        let escaped: String = escape(xml);
-        fb = deserialize(escaped.as_bytes());
-        if fb.is_err() {
-            let fb_tools_fixed = fix_fb_tools_defect(&escaped);
-            fb = deserialize(fb_tools_fixed.as_bytes());
-            if fb.is_err() {
-                let double_tag_fixed = fix_double_tags(&fb_tools_fixed, "title-info", "last-name");
-                fb = deserialize(double_tag_fixed.as_bytes());
-            }
-        }
+fn try_raw(xml: String) -> Result<FictionBook, String> {
+    match deserialize(xml.as_bytes()) {
+        Ok(result) => Ok(result),
+        Err(_) => Err(xml),
     }
-    return fb;
+}
+
+fn try_escaped(xml: String) -> Result<FictionBook, String> {
+    let fixed_xml = escape(&xml);
+    match deserialize(fixed_xml.as_bytes()) {
+        Ok(result) => Ok(result),
+        Err(_) => Err(fixed_xml),
+    }
+}
+
+fn try_fix_double_lang(xml: String) -> Result<FictionBook, String> {
+    let fixed_xml = fix_fb_tools_defect(&xml);
+    match deserialize(fixed_xml.as_bytes()) {
+        Ok(result) => Ok(result),
+        Err(_) => Err(fixed_xml),
+    }
+}
+
+fn try_fix_double_last_name(xml: String) -> Result<FictionBook, String> {
+    let fixed_xml = fix_double_tags(&xml, "title-info", "last-name");
+    match deserialize(fixed_xml.as_bytes()) {
+        Ok(result) => Ok(result),
+        Err(_) => Err(fixed_xml),
+    }    
+}
+
+fn done(xml: String) -> Result<FictionBook, Error> {
+    match deserialize(xml.as_bytes()) {
+        Ok(result) => Ok(result),
+        Err(err) => Err(err),
+    }    
+}
+
+fn parse(xml: &String) -> Result<FictionBook, Error> {
+    return try_raw(xml.clone()).or_else(try_escaped).or_else(try_fix_double_lang).or_else(try_fix_double_last_name).or_else(done);
 }
 
 fn main() {
-    let mut reader = io::stdin();
     let mut xml = String::new();
-    match reader.read_to_string(&mut xml) {
+    match std::io::stdin().read_to_string(&mut xml) {
         Ok(_) => {
             match parse(&xml) {
                 Ok(fb) => println!("{:#?}", fb),
-                Err(_) => println!("{}", xml),
+                Err(err) => println!("ERRORCCURED: {}\n{}", err, xml),
             }
         }
         Err(_) => {}
