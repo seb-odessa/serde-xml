@@ -174,7 +174,7 @@ fn get_tag(content: &str, tag: &str) -> Option<String> {
     None
 }
 
-fn dedublicate_tags(xml: &String, parent: &str, tag: &str) -> String {
+fn deduplicate_tags(xml: &String, parent: &str, tag: &str) -> String {
     if let Some(content) = get_tag(&xml, parent) {
         if let Some(value) = get_tag(&xml, tag) {
             if let Some(first) = content.find(&value) {
@@ -210,7 +210,7 @@ fn try_escaped(xml: String) -> Result<FictionBook, String> {
 }
 
 fn try_fix_lang(xml: String) -> Result<FictionBook, String> {
-    let fixed_xml = dedublicate_tags(&xml, "title-info", "lang");
+    let fixed_xml = deduplicate_tags(&xml, "title-info", "lang");
     match deserialize(fixed_xml.as_bytes()) {
         Ok(result) => Ok(result),
         Err(_) => Err(fixed_xml),
@@ -218,7 +218,7 @@ fn try_fix_lang(xml: String) -> Result<FictionBook, String> {
 }
 
 fn try_fix_last_name(xml: String) -> Result<FictionBook, String> {
-    let fixed_xml = dedublicate_tags(&xml, "title-info", "last-name");
+    let fixed_xml = deduplicate_tags(&xml, "title-info", "last-name");
     match deserialize(fixed_xml.as_bytes()) {
         Ok(result) => Ok(result),
         Err(_) => Err(fixed_xml),
