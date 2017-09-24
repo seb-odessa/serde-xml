@@ -4,6 +4,4 @@ version = "0.1.0"
 authors = ["seb-odessa <seb@ukr.net>"]
 
 [dependencies]
-    serde = "*"
-    serde_derive = "*"
-    serde-xml-rs = "*"
+    fb2parser = { git = "https://github.com/seb-odessa/fb2parser.git" }
